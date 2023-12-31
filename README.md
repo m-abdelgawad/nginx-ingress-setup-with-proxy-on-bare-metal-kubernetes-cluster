@@ -55,7 +55,7 @@ In this written guide, I documeneted my hands-on experience while deploying Ngin
     * The repo includes manifest files to deploy Ingress Nginx on multiple platforms, such as AWS and DigitalOcean. These manifest fiels create a Load Balancer outside your cluster then forwards the traffic to your Ingress Nginx deployment. That setup adds extra charges to your bill, of course.
     * There is also a manifest file for deploying Ingress Nginx on baremetal Kubernetes cluster.
 
-      <img src="readme_files/1.jpg">
+<img src="readme_files/1.jpg">
 
     1. We can deploy the Ingress Nginx directly using the below command:
 
@@ -75,7 +75,7 @@ In this written guide, I documeneted my hands-on experience while deploying Ngin
 
       * We can verify that the deployment is successful by checking the deployment and pods status:
 
-        <img src="readme_files/2.jpg">
+<img src="readme_files/2.jpg">
 
   3. The deployment of Ingress Nginx on bare-metal deploys a service called `ingress-nginx-controller` of type `NodePort`. That means the Ingress Nginx service will be accessible by a NodePort. Since the service manifest doesn't specify a NodePort, we can either use the NodePorts specified by Kubernetes or edit the service and specify desired ports.
       * Personally, I chose to edit the service and set the HTTP port to `30001` and HTTPS port to `30002`.
@@ -85,9 +85,9 @@ In this written guide, I documeneted my hands-on experience while deploying Ngin
         kubectl edit svc ingress-nginx-controller -n ingress-nginx
         ```
 
-        <img src="readme_files/4.jpg">
+<img src="readme_files/4.jpg">
 
-        <img src="readme_files/3.jpg">
+<img src="readme_files/3.jpg">
 
   4. We can verify that Ingress Nginx listens successfully on the specified ports by using:
 
@@ -99,7 +99,7 @@ In this written guide, I documeneted my hands-on experience while deploying Ngin
       curl http://localhost:30002
       ```
 
-      <img src="readme_files/5.jpg">
+<img src="readme_files/5.jpg">
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -396,6 +396,61 @@ You can see that the application opens successfully with the domain name and SSL
 
 <img src="readme_files/14.jpg">
 
+-----------------------------------------------------------------
+
+**An interesting issue that I faced was the below error in the logs of the controller pod:**
+
+```
+Ignoring ingress because of error while validating ingress class" ingress="default/wear-watch-ingress" error="no object matching key \"nginx\" in local store
+```
+
+I've specified the IngressClass in the ingress rule as "nginx". However, the controller tells us that there is no IngressClass with that name.  **How to debug this issue?**
+
+1. We check if there is an IngressClass already defined by running:
+    ```
+    kubectl get IngressClass
+    ```
+2. If there are any defined IngressClass, we get its name by running the below command and checking the name field in the metadata section.
+    ```
+    kubectl get IngressClass -o yaml
+    ```
+<img src="readme_files/15.jpg">
+
+3. In my case, there wasn't an IngressClass defined. So, I had to define my IngressClass. I searched the <a href="https://kubernetes.io/docs/concepts/services-networking/ingress/#ingress-class">documentation</a> on how to create the IngressClass resource.
+
+<img src="readme_files/15.jpg">
+
+4. There are three fields that we need to edit in the example IngressClass: `name`, `parameters`, and `controller`. 
+
+    * The `name` field should be specified as we already specified in the Ingress resource before.
+    * The `parameters` field can be deleted.
+    * The `controller` should be the exact controller name deployed in the cluster. The controller name is defined as an argument in the deployment resource as `--controller-class=k8s.io/ingress-nginx`. So, the `controller` should be `k8s.io/ingress-nginx`.
+
+<img src="readme_files/16.jpg">
+<img src="readme_files/17.jpg">
+<img src="readme_files/18.jpg">
+
+
+5. So, the full IngressResource should be defined as below:
+```
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: nginx
+spec:
+  controller: k8s.io/ingress-nginx
+```
+
+6. We put the definition in a file then create it:
+```
+kubectl apply -f IngressClass.yaml
+```
+
+7. Finally, we need to delete the ingress rule that we've created before then recreate it again for the controller to notice it:
+
+<img src="readme_files/19.jpg">
+<img src="readme_files/20.jpg">
+<img src="readme_files/21.jpg">
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
