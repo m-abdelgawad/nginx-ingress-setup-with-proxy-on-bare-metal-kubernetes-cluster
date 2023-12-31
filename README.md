@@ -315,7 +315,7 @@ Let's check the detailed steps:
     kubectl apply -f test-service.yaml
     ```
 
-4. Create an Ingress resource to route the traffic to the deployed application. The below resource, specify any host with path `/wear` to route to our application.
+4. Create an Ingress resource to route the traffic to the deployed application. The below resource specifies the domain in the host field and the path `/wear` to route to our application.
 
     ```
     vim test-ingress.yaml
@@ -331,15 +331,16 @@ Let's check the detailed steps:
     spec:
       ingressClassName: nginx
       rules:
-      - http:
+      - host: mohamedabdelgawad.online
+        http:
           paths:
-          - backend:
+          - path: /wear
+            pathType: Prefix
+            backend:
               service:
                 name: wear-service
                 port:
                   number: 8080
-            path: /wear
-            pathType: Prefix
     ```
     ```
     kubectl apply -f test-ingress.yaml
