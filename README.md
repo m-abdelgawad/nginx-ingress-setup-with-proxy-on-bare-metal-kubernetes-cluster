@@ -122,19 +122,18 @@ The setup contains 4 file:
 1. Run `vim default.conf` and add below content. The `157.230.12.200` is any node ip in the cluster and the `30001` port is the HTTP nodePort of the ingress service. **A very important note here is to change the domain name in the ssl_certificate paths and server names in the below file.**
 
 ```
-# Redirect all HTTP requests to HTTPS
 server {
     listen 80;
-    server_name mohamedabdelgawad.online www.mohamedabdelgawad.online;
+    server_name _;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name mohamedabdelgawad.online www.mohamedabdelgawad.online;
+    server_name _;
 
-    ssl_certificate /etc/letsencrypt/live/mohamedabdelgawad.online/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/mohamedabdelgawad.online/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/automagicdeveloper.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/automagicdeveloper.com/privkey.pem;
 
     location / {
         proxy_set_header Host $host;
@@ -183,7 +182,7 @@ done
 
 ```
 FROM nginx:latest
-
+  
 # Install certbot to generate the SSL certificates
 RUN apt-get update && apt-get install -y certbot python3-certbot-nginx
 
@@ -213,12 +212,12 @@ ENTRYPOINT ["bash", "generate_certificate.sh"]
 
 ```
 version: "3.8"
-
+  
 services:
 
   nginx_server:
-    container_name: nginx_server
-    image: nginx_server
+    container_name: nginx-proxy-server-for-kubernetes
+    image: nginx-proxy-server-for-kubernetes
     build: ./
     volumes:
       - letsencrypt:/etc/letsencrypt
